@@ -1,3 +1,4 @@
+import cron from "node-cron";
 import { Telegraf } from "telegraf";
 import axios from "axios";
 import dotenv from "dotenv";
@@ -34,9 +35,26 @@ class WeatherBot {
 
   private async getWeather(): Promise<WeatherData> {
     try {
+      if (!this.apiKey) {
+        throw new Error("WEATHER_API_KEY не указан в .env");
+      }
+
       const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/weather?q=${this.targetCity}&units=metric&appid=${this.apiKey}&lang=ru`
+        `https://api.openweathermap.org/data/2.5/weather`,
+        {
+          params: {
+            q: this.targetCity,
+            units: "metric",
+            appid: this.apiKey,
+            lang: "ru",
+          },
+          timeout: 5000, // 5 секунд таймаут
+        }
       );
+
+      if (response.status !== 200) {
+        throw new Error(`API вернул статус ${response.status}`);
+      }
 
       return {
         city: this.targetCity,
@@ -48,11 +66,12 @@ class WeatherBot {
         icon: response.data.weather[0].icon,
       };
     } catch (error) {
-      throw new Error(
-        `Ошибка получения погоды: ${
-          error instanceof Error ? error.message : String(error)
-        }`
-      );
+      console.error("Детали ошибки:", {
+        city: this.targetCity,
+        apiKey: this.apiKey ? "установлен" : "отсутствует",
+        error: axios.isAxiosError(error) ? error.response?.data : error,
+      });
+      throw error;
     }
   }
 
@@ -132,5 +151,4 @@ ${emoji} <b>Погода в ${weather.city}</b> ${emoji}
 const weatherBot = new WeatherBot();
 weatherBot.start();
 
-import cron from "node-cron";
-cron.schedule("0 7 * * *", () => weatherBot.sendDailyWeather()); 
+cron.schedule("0 7 * * *", () => weatherBot.sendDailyWeather());
