@@ -10,9 +10,11 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@huggingface/inference": "^3.7.0",
     "axios": "^1.8.4",
     "dotenv": "^16.4.7",
     "node-cron": "^3.0.3",
+    "openai": "^4.92.0",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {
